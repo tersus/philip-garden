@@ -1,4 +1,4 @@
 emacs-on-fire
 =============
 
-An editor that opens shared documents with emacs like navigation.
+An editor on the browser that opens tersus-shared files with emacs like navigation.
