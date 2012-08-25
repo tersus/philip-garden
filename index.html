@@ -1,12 +1,11 @@
 <h1> Hello world! </h1>
 
 <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.8.0/jquery.min.js"></script>
-<script src="http://localhost:3000/static/api.js"></script>
+<script src="http://localhost:3000/static/api/Tersus.js"></script>
 
 <script type="text/javascript">
   function saveText(){
-     var text = $("#text").val();
-     writeFile("path",text)
+     tersus.writeFile("/code/Monad.hs",$("#text").val());
   }
 </script>
 
@@ -16,7 +15,11 @@
 
 <b>Next todo:</b> Share with another user (which implies you are the owner and he has access to modify it).
 
+
 <hr />
+
+<input type="button" value="Load" onClick="alert('Not implemented');"/>
+<input type="button" value="Save" onClick="saveText()"/>
 
 <p>
   <textarea id="text" rows="20" cols="120"></textarea>
@@ -24,5 +27,3 @@
 
 <hr />
 
-<input type="button" value="Load" onClick="alert('Not implemented');"/>
-<input type="button" value="Save" onClick="saveText()"/>
