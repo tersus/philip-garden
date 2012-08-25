@@ -15,6 +15,25 @@
   }
 
   $(document).ready(loadText);
+
+  var users = [];
+  function addUser(){
+
+      users.push($("#userIn").val());
+      $("#userIn").val('');
+  }
+
+  function sendDocument(){
+
+      document.tersus.sendMessageAsync(users,document.tersus.application,$("#text").val(),function(m){});
+  }
+
+  document.tersus.initMessaging();
+  
+  document.tersus.registerDefaultCallback(function(msg){
+
+      alert('User: ' + msg.userSender + ', Sent: '+msg.content);
+  });
 </script>
 
 <p>Welcome to emacs-on-fire, text something to your file in /files/text.txt.</p>
@@ -28,6 +47,9 @@
 
 <input type="button" value="Load" onClick="loadText()"/>
 <input type="button" value="Save" onClick="saveText()"/>
+<input type="button" value="Send" onClick="sendDocument()"/>
+<input type="text" id="userIn"/>
+<input type="button" value="Add User" onClick="addUser()"/>
 
 <p>
   <textarea id="text" rows="20" cols="120"></textarea>
