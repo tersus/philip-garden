@@ -5,8 +5,16 @@
 
 <script type="text/javascript">
   function saveText(){
-     tersus.writeFile("/code/Monad.hs",$("#text").val());
+     tersus.writeFile("/Monad.hs",$("#text").val(),function(msg){alert(msg)});
   }
+  
+  function populateTextArea(content){ $("#text").val(content) }
+
+  function loadText(){
+     tersus.getFile("/Monad.hs",populateTextArea);
+  }
+
+  $(document).ready(loadText);
 </script>
 
 <p>Welcome to emacs-on-fire, text something to your file in /files/text.txt.</p>
@@ -18,7 +26,7 @@
 
 <hr />
 
-<input type="button" value="Load" onClick="alert('Not implemented');"/>
+<input type="button" value="Load" onClick="loadText()"/>
 <input type="button" value="Save" onClick="saveText()"/>
 
 <p>
