@@ -9,23 +9,123 @@
   }
 
   var users = [];
-  function addUser(){
 
-      users.push($("#userIn").val());
-      $("#userIn").val('');
-  }
+  (function ($, undefined) {
+    $.fn.getCursorPosition = function() {
+        var el = $(this).get(0);
+        var pos = 0;
+        if('selectionStart' in el) {
+            pos = el.selectionStart;
+        } else if('selection' in document) {
+            el.focus();
+            var Sel = document.selection.createRange();
+            var SelLength = document.selection.createRange().text.length;
+            Sel.moveStart('character', -el.value.length);
+            pos = Sel.text.length - SelLength;
+        }
+        return pos;
+	}
+    })(jQuery);
 
-  function sendDocument(){
+    var carrigePos = 0;
+
+    var delta = "";
+    
+    function keyPressHandler(e){
+
+        delta += String.fromCharCode(e.which);
+    }
+
+    function sendUpdates(updates){
+
+        document.tersus.sendMessageAsync(users,document.tersus.application,JSON.stringify(updates),function(m){});
+    }
+
+    function receiveUpdates(msg){
+
+        var updates = eval("(" + msg.content + ")");
+        var oldText = $('#text').val();
+
+	if(oldText.length < updates.pos){
+	    $('#text').val(oldText + updates.delta)
+
+	}else{
+
+	    tmp = oldText.substr(0,updates.pos);
+	    tmp2 = oldText.substr(updates.pos);
+	    $('#text').val(tmp + updates.delta + tmp2);
+	}
+	
+    }
+
+    function getUpdatesAndReset(){
+
+        var updates = new Object();
+	updates.pos = carrigePos;
+	updates.delta = delta;
+	carrigePos = $('#text').getCursorPosition();
+	delta = "";
+
+	return updates;
+    }
+
+    function isArrow(keyCode){
+    
+        return keyCode == 39 || keyCode == 40 || keyCode == 37 || keyCode == 38;
+    }
+
+    function keyDownHandler(e){
+
+        if(isArrow(e.which)){
+
+	    var updates = getUpdatesAndReset();
+
+	    sendUpdates(updates);
+
+	}
+    }
+
+    function keyUpHandler(e){
+
+        if(isArrow(e.which)){
+
+	    carrigePos = $('#text').getCursorPosition();	    
+	}
+    }
+
+    function clickHandler(e){
+    
+        carrigePos = $('#text').getCursorPosition();
+    }
+
+    function shareDocument(){
+
+      if(users.length > 0)
+          document.tersus.unregisterCallback(users[0]);
+
+      users = [$("#userIn").val()];
+
+      delta = "";
+      document.tersus.registerCallback(users[0],receiveUpdates);
 
       document.tersus.sendMessageAsync(users,document.tersus.application,$("#text").val(),function(m){});
   }
 
-  document.tersus.initMessaging();
   
-  document.tersus.registerDefaultCallback(function(msg){
+  
+     document.tersus.registerDefaultCallback(function(msg){
 
-      alert('User: ' + msg.userSender + ', Sent: '+msg.content);
-  });
+      if(users.length > 0)
+          document.tersus.unregisterCallback(users[0]);
+
+      $('#text').val(msg.content);
+      users = [msg.userSender];
+      
+      document.tersus.registerCallback(msg.userSender,receiveUpdates);
+    });
+
+
+    document.tersus.initMessaging();
 
 </script>
 
@@ -40,9 +140,8 @@
 
 <input type="button" value="Load" onClick="alert('Not implemented');"/>
 <input type="button" value="Save" onClick="saveText()"/>
-<input type="button" value="Send" onClick="sendDocument()"/>
+<input type="button" value="Share" onClick="shareDocument()"/>
 <input type="text" id="userIn"/>
-<input type="button" value="Add User" onClick="addUser()"/>
 
 <p>
   <textarea id="text" rows="20" cols="120"></textarea>
@@ -50,3 +149,9 @@
 
 <hr />
 
+<script type="text/javascript">
+$('#text').keypress(keyPressHandler);
+    $('#text').keydown(keyDownHandler);
+    $('#text').keyup(keyUpHandler);
+    $('#text').click(clickHandler);
+</script>
