@@ -1,0 +1,5 @@
+# Ignore everything in ace git repo
+js/ace/*
+
+# But not these files...
+!js/ace/lib
