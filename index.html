@@ -4,6 +4,7 @@
 <script src="/static/api/Tersus.js"></script>
 <script src="/static/api/libs/require-2.0.6.min.js"></script>
 <script src="js/main.js" ></script>
+<script src="js/ace/ace.js" ></script>
 
 <style type="text/css" media="screen">
     #editor { 
@@ -33,13 +34,8 @@
 
 <hr />
 
-<script src="http://d1n0x3qji82z53.cloudfront.net/src-min-noconflict/ace.js" type="text/javascript" charset="utf-8"></script>
-
 <script type="text/javascript">
-
-//    var ace = require("js/ace/lib/ace");
-
-$('#text').keypress(keyPressHandler);
+    $('#text').keypress(keyPressHandler);
     $('#text').keydown(keyDownHandler);
     $('#text').keyup(keyUpHandler);
     $('#text').click(clickHandler);
