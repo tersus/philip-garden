@@ -6,10 +6,10 @@
 //to share files and syncronize updates
 
 function saveText(){
-    tersus.writeFile("/Monad.hs",$("#text").val(),function(msg){alert(msg)});
+    tersus.writeFile("/Monad.hs",editor.getValue(),function(msg){alert(msg)});
 }
 
-function populateTextArea(content){ $("#text").val(content) }
+function populateTextArea(content){ editor.setValue(content) }
 
 function loadText(){
     tersus.getFile("/Monad.hs",populateTextArea);

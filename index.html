@@ -2,9 +2,12 @@
 
 <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.8.0/jquery.min.js"></script>
 <script src="/static/api/Tersus.js"></script>
-<script src="/static/api/libs/require-2.0.6.min.js"></script>
 <script src="js/main.js" ></script>
-<script src="js/ace/ace.js" ></script>
+<script src="js/ace/ace.js" type="text/javascript" ></script>
+
+<script type="text/javascript">
+
+</script>
 
 <style type="text/css" media="screen">
     #editor { 
@@ -19,7 +22,6 @@
 
 <b>Next todo:</b> Share with another user (which implies you are the owner and he has access to modify it).
 
-
 <hr />
 
 <input type="button" value="Load" onClick="loadText()"/>
@@ -27,10 +29,7 @@
 <input type="button" value="Share" onClick="shareDocument()"/>
 <input type="text" id="userIn"/>
 
-  <div id="editor">function foo(items) {
-    var x = "All this is syntax highlighted";
-    return x;
-  }</div>
+<div id="editor"></div>
 
 <hr />
 
@@ -40,9 +39,8 @@
     $('#text').keyup(keyUpHandler);
     $('#text').click(clickHandler);
 
-   
     var editor = ace.edit("editor");
     editor.setTheme("ace/theme/monokai");
-    editor.getSession().setMode("ace/mode/javascript");
+//    editor.getSession().setMode("ace/mode/javascript");
 </script>
 
