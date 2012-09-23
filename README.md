@@ -1,4 +1,7 @@
-emacs-on-fire
+philip-garden
 =============
 
-An editor on the browser that opens tersus-shared files with emacs like navigation.
+An editor meant to be run as a tersus application
+
+Features:
+ - Share files
