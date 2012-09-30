@@ -1,4 +1,4 @@
-//Emacs On Fire
+//Philip Garden
 //
 //Liscence: BSD
 //
@@ -6,175 +6,279 @@
 //to share files and syncronize updates
 
 function saveText(){
-    tersus.writeFile("/Monad.hs",editor.getValue(),function(msg){alert(msg)});
+    tersus.writeFile("/Monad.hs",editor.editor.getValue(),function(msg){alert(msg)});
 }
 
-function populateTextArea(content){ editor.setValue(content) }
+function populateTextArea(content){ editor.editor.setValue(content); }
 
 function loadText(){
     tersus.getFile("/Monad.hs",populateTextArea);
 }
 
-$(document).ready(loadText);
+//$(document).ready(loadText);
 
-var users = [];
+//Array containing all the buffers
+var buffers = [];
 
-(function ($, undefined) {
-    $.fn.getCursorPosition = function() {
-        var el = $(this).get(0);
-        var pos = 0;
-        if('selectionStart' in el) {
-            pos = el.selectionStart;
-        } else if('selection' in document) {
-            el.focus();
-            var Sel = document.selection.createRange();
-            var SelLength = document.selection.createRange().text.length;
-            Sel.moveStart('character', -el.value.length);
-            pos = Sel.text.length - SelLength;
-        }
-        return pos;
-    }
-})(jQuery);
+//Array containing all the Frames, they are indexed
+//by the id of the div element of the ace editor
+var editors = [];
 
-var carrigePos = 0;
+//Represents a text buffer. The text in a buffer can be 
+//asociated with a file.
+function Buffer(name,file){
 
-var delta = [];
-
-var BACKSPACE_NUM = 0;
-
-function keyPressHandler(e){
-
-    delta.push(String.fromCharCode(e.which));
+    //Name of the buffer (should be unique)
+    this.name = getBufferName(name,buffers,0);
+    //File from the buffer (can be undifined for no file)
+    this.file = file;
+    //The current content of the buffer
+    this.content = "";
+    //Used to create deltas when using differential synchronization
+    this.shadow = "";
 }
 
-function sendUpdates(updates){
+//Produce a new name for a buffer, this function ensures
+//that the produced name dosen't exist within the existing
+//buffers
+function getBufferName(name,buffers,it){
 
-    if(updates.delta.length > 0)
-        document.tersus.sendMessageAsync(users,document.tersus.application,JSON.stringify(updates),function(m){});
-}
+    var tmpName = "";
 
-function receiveUpdates(msg){
+    if(it < 1){
 
-    var updates = eval("(" + msg.content + ")");
-    var oldText = $('#text').val();
-    $('#text').val(applyUpdates(oldText,updates.delta,updates.pos));
-}
+	tmpName = name;
+    }else
+	tmpName = name + " <"+it+">";
 
-function deltaCount(d){
+    for(var i=0;i<buffers.length;i++){
 
-    var count = 0;
-    for(var i = 0; i < d.length; i++){
+	if(buffers[i].name == tmpName){
 
-	if(d[i] === BACKSPACE_NUM)
-	    count = count - 1;
-        else
-	    count = count + 1;
-    }
-
-    if(count < 0)
-	count = 0;
-
-    return count;
-}
-
-function applyUpdates(oldText,inserts,pos){
-
-    var head = [];
-    var tail = "";
-
-    if(pos > carrigePos)
-	pos += deltaCount(delta);
-
-    if(oldText.length < pos){
-	
-	head = oldText.split("");
-	
-    }else{
-
-	head = oldText.substr(0,pos).split("");
-	tail = oldText.substr(pos);
-    }
-
-    for(var i = 0; i < inserts.length; i++){
-	
-	if(inserts[i] === BACKSPACE_NUM){
-	    head.pop();
+	    return getBufferName(name,buffers,it+1);
 	}
-	else{
-	    head.push(inserts[i]);
-	}
-
     }
 
-    return head.join("") + tail;
+    return tmpName;
 }
 
-function getUpdatesAndReset(){
+//The main text editor
+var editor = undefined;
 
-    var updates = new Object();
-    updates.pos = carrigePos;
-    updates.delta = delta;
-    carrigePos = $('#text').getCursorPosition();
-    delta = [];
+//The small text editor used to run commands
+var miniBuffer = undefined;
 
-    return updates;
+//Place to write messages
+var nArea = undefined;
+
+//Given a complete filename with path, extract the filename
+function makeBufferNameFromFile(filename){
+
+    var lastSlash = filename.lastIndexOf('/');
+
+    if(lastSlash >= 0)
+	return filename.substr(lastSlash+1);
+    else
+	return filename;
 }
 
-function isArrow(keyCode){
+//Create a new buffer with the given file and content
+function openBuffer(editor,filename,content){
+
+    var buffName = makeBufferNameFromFile(filename);
+
+    var buffer = new Buffer(buffName,filename);
+
+    if(content)
+	buffer.content = content;
+
+    buffers.push(buffer);
+    editor.setBuffer(buffer);
+
+    nArea.html('Loaded file: '+filename);
+    editor.editor.focus();
+}
+
+//Open a file and load it into a new buffer. This function uses
+//the minibuffer to get the filename from the user and puts
+//the contents of the file in the given editor.
+function openFile(editor){
+
+    miniBuffer.getInput(function(filename){
+
+	tersus.getFile(filename
+		       ,function(c){openBuffer(editor,filename,c);}
+		       ,{'errorCallback' : function(e){openBuffer(editor,filename,"");}});
+    });
+}
+
+//Write the contents of the given editor into the file pointed by it's
+//buffer
+function saveEditorFile(editor){
+    editor.buffer.content = editor.editor.getValue();
     
-    return keyCode == 39 || keyCode == 40 || keyCode == 37 || keyCode == 38;
+    tersus.writeFile(editor.buffer.file,
+		     editor.buffer.content,
+		     function(msg){
+			 nArea.html('Wrote file: '+editor.buffer.file);
+			 editor.editor.focus();
+			 });
 }
 
-function keyDownHandler(e){
+//Try to save file, this function checks that the buffer
+//has a file asociated with it. If not, the filename is requested
+//through the mini-buffer
+function saveFile(editor){
 
-    if(isArrow(e.which)){
-
-	var updates = getUpdatesAndReset();
-
-	sendUpdates(updates);
-
-    }else if(e.which == 8)
-	delta.push(BACKSPACE_NUM);
+    if(!editor.buffer.file){
+	miniBuffer.getInput(function(filename){
+	    
+	    editor.buffer.file = filename;
+	    saveEditorFile(editor);
+	});
+    }else
+	saveEditorFile(editor);
+	
 }
 
-function keyUpHandler(e){
+//Some emacs like shortcuts for the editor
+var FRAME_KEY_ACTIONS = [
+    {name: 'findFile',
+     bindKey : {win: 'Ctrl-X-Ctrl-F', mac: 'Command-X-Command-F'},
+     exec: openFile},
+    {name: 'writeFile',
+     bindKey : {win: 'Ctrl-X-Ctrl-S', mac: 'Command-X-Command-S'},
+     exec: saveFile}
+    ];
 
-    if(isArrow(e.which)){
+//A frame is asociated with a ace editor. The frame also knows which
+//buffer it's currently opened in that editor. Also the html div element
+//is saved if direct manipulation to the dom is required
+//The id of the div that should become an editor is given
+function Frame(id){
 
-	carrigePos = $('#text').getCursorPosition();	    
+    //The ace editor
+    this.editor = ace.edit(id);
+    //Html div element for that Frame
+    this.div = $('#'+id);
+    //The buffer to which the frame points
+    this.buffer = undefined;
+    //Add the editor to the map by id. This is used 
+    //for referencing the Frame
+    editors[id] = this;
+    this.id = id;
+
+    for(var i = 0; i < FRAME_KEY_ACTIONS.length; i++){
+
+	var cmd = new Object();
+	cmd.name = FRAME_KEY_ACTIONS[i].name;
+	cmd.bindKey = FRAME_KEY_ACTIONS[i].bindKey;
+	cmd.editorId = id;
+	cmd.i = i;
+	cmd.exec = function(){
+
+	    var obj = editors[this.editorId];
+	    FRAME_KEY_ACTIONS[this.i].exec(obj);
+	    };
+
+	this.editor.commands.addCommand(cmd);
     }
 }
-
-function clickHandler(e){
     
-    carrigePos = $('#text').getCursorPosition();
+//Utility function to hide a frame
+Frame.prototype.setVisible = function(visibility){
+
+    if(visibility)
+	this.div.css('visibility','visible');
+    else
+	this.div.css('visibility','hidden');
+};
+
+//Utility function to set the current buffer which
+//is being edited by the frame. This function
+//saves the current contents in the current buffer,
+//changes the buffer and loads the contents from
+//that buffer
+Frame.prototype.setBuffer= function(buffer){
+
+    if(this.buffer){
+
+	this.buffer.content = this.editor.getValue();
+    }
+
+    this.buffer = buffer;
+    this.editor.session.doc.setValue(this.buffer.content);
+};
+
+//The minibuffer is the small text area below used to obtain
+//user input for many of the commands. If the mini-buffer is
+//invoked a specified function will be called with the user
+//input as parameter before being closed
+//The id of the div element that should be used as minibuffer
+//should be specified
+function MiniBuffer(id){
+
+    this.editor = ace.edit(id);
+    this.div = $('#'+id);
+
+    //The function that will be called before closing
+    //the buffer giving the buffers contents as parameter
+    this.closeFunction = undefined;
+
+    //Key binding to call the close Function
+    var runBuffer = new Object();
+    runBuffer.name = 'runBuffer';
+    runBuffer.bindKey = {win: 'return',  mac: 'return'};
+    runBuffer.exec = function(e){runClose();};
+
+    this.editor.commands.addCommand(runBuffer);
+
+    //Visibility changing utility function
+    this.setVisible = function(visibility){
+
+	if(visibility)
+	    this.div.css('visibility','visible');
+	else
+	    this.div.css('visibility','hidden');
+    };
+
+    //Open a minibuffer using f as the 
+    //collapse function
+    this.getInput = function(f){
+
+	this.setVisible(true);
+	this.closeFunction = f;
+	this.editor.focus();
+    };
+
 }
 
-function shareDocument(){
-
-    if(users.length > 0)
-        document.tersus.unregisterCallback(users[0]);
-
-    users = [$("#userIn").val()];
-
-    delta = [];
-    document.tersus.registerCallback(users[0],receiveUpdates);
-
-    document.tersus.sendMessageAsync(users,document.tersus.application,$("#text").val(),function(m){});
-}
-
-
-
-document.tersus.registerDefaultCallback(function(msg){
-
-    if(users.length > 0)
-        document.tersus.unregisterCallback(users[0]);
-
-    $('#text').val(msg.content);
-    users = [msg.userSender];
+//Function used to close the mini buffer
+function runClose(){
+        
+    if(miniBuffer.closeFunction)
+	miniBuffer.closeFunction(miniBuffer.editor.getValue());
     
-    document.tersus.registerCallback(msg.userSender,receiveUpdates);
+    miniBuffer.closeFunction = undefined;
+    
+    miniBuffer.editor.setValue("");
+
+    miniBuffer.setVisible(false);
+};
+
+$(document).ready(function(){
+
+    nArea = $('#notificationsArea');
+
+    miniBuffer = new MiniBuffer('miniBuffer');
+    miniBuffer.setVisible(false);
+
+    editor = new Frame('editor');
+    editor.editor.setTheme("ace/theme/monokai");
+    
+    var buffer = new Buffer("*scratch*",undefined);
+    buffers.push(buffer);
+    editor.setBuffer(buffer);
+
+    document.tersus.initMessaging();
 });
-
-
-document.tersus.initMessaging();
