@@ -79,6 +79,16 @@
     </div><!-- navbar -->
     
     <div class="container">
+      <div class="row">
+        <!-- breadcrumb example, if a directory is picked, a dropdown menu should follow -->
+        <ul class="breadcrumb">
+          <li><a href="javascript:openFile('/')">/</a></li>
+          <li><a href="javascript:openFile('/haskell)">haskell</a><span class="divider">/</span></li>
+          <li><a href="javascript:openFile('/haskell/p1/')">p1</a><span class="divider">/</span></li>
+          <li class="active">Main.hs</li>
+        </ul>
+      </div>
+
       <div class="row">        
         <div id="editor" class="span12"></div>
       </div>
