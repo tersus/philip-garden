@@ -99,17 +99,118 @@ function openBuffer(editor,filename,content){
     editor.editor.focus();
 }
 
+//Search in the buffer stack for a buffer
+//that the given property is set to the
+//given value
+function getBufferByProperty(prop,value){
+
+    for(var i=0;i<buffers.length;i++)
+	if(buffers[i][prop] == value)
+	    return buffers[i];
+
+    return undefined;
+}
+
+//Get the buffer from the stack where
+//the given file is currently being
+//edited
+function getBufferByFilename(filename){
+
+    return getBufferByProperty('file',filename);    
+}
+
+//Search for a buffer using the name of the buffer
+function getBufferByName(name){
+
+    return getBufferByProperty('name',name);
+}
+
+//Escape a string to be used as a regular expression
+//for searching
+RegExp.escape = function(text) {
+    return text.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&");
+}
+
+//Search for buffers that have a name similar to
+//the given name
+function getBuffersLike(name){
+
+    var eName = RegExp.escape(name);
+
+    var ret = [];
+    for(var i = 0;i<buffers.length;i++)
+	if(buffers[i].name.search(eName) == 0)
+	    ret.push(buffers[i]);
+
+    return ret;
+}
+
+//Create a new empty buffer with the given name
+//and push it to the buffer stack
+function createBuffer(name){
+
+    var buffer = new Buffer(name,undefined);
+    buffers.push(buffer);
+    return buffer;
+}
+
+//Request a buffer name through the minibuffer
+//and set that buffer in the current editor
+function setBuffer(editor){
+
+    miniBuffer.getInput({
+	closeFunction:function(bufferName){
+	    
+	    var buffer = getBufferByName(bufferName);
+
+	    if(!buffer)
+		buffer = createBuffer(bufferName);
+
+	    editor.setBuffer(buffer);
+	    editor.editor.focus();
+	},
+	completionFunction:function(bufferName){
+
+	    
+	    var suggestions = getBuffersLike(bufferName);
+
+	    var ret = new Object();
+
+	    if(suggestions.length == 1){
+	    	ret.result = suggestions[0].name;
+	    }else
+	    	ret.result=bufferName;
+
+	    ret.completions = "";
+
+	    for(var i=0;i<suggestions.length;i++)
+	    	ret.completions = ret.completions + suggestions[i].name + "\n";
+
+	    return ret;
+	    
+	}
+	});
+}
+
 //Open a file and load it into a new buffer. This function uses
 //the minibuffer to get the filename from the user and puts
 //the contents of the file in the given editor.
 function openFile(editor){
 
-    miniBuffer.getInput(function(filename){
+    miniBuffer.getInput({
+	closeFunction:function(filename){
 
-	tersus.getFile(filename
-		       ,function(c){openBuffer(editor,filename,c);}
-		       ,{'errorCallback' : function(e){openBuffer(editor,filename,"");}});
-    });
+	    var buffer = getBufferByFilename(filename);
+
+	    if(buffer)
+		editor.setBuffer(buffer);
+	    else
+		tersus.getFile(filename
+			       ,function(c){openBuffer(editor,filename,c);}
+			       ,{'errorCallback' : function(e){openBuffer(editor,filename,"");}});
+
+	    editor.editor.focus();
+    }});
 }
 
 //Write the contents of the given editor into the file pointed by it's
@@ -148,7 +249,10 @@ var FRAME_KEY_ACTIONS = [
      exec: openFile},
     {name: 'writeFile',
      bindKey : {win: 'Ctrl-X-Ctrl-S', mac: 'Command-X-Command-S'},
-     exec: saveFile}
+     exec: saveFile},
+    {name: 'setBuffer',
+     bindKey : {win: 'Ctrl-X-B', mac: 'Command-X-B'},
+     exec: setBuffer}
     ];
 
 //A frame is asociated with a ace editor. The frame also knows which
@@ -221,9 +325,16 @@ function MiniBuffer(id){
     this.editor = ace.edit(id);
     this.div = $('#'+id);
 
+    //Buffer for notifications and autocompletions
+    this.buffer = new Buffer("*completions*",undefined);
+
     //The function that will be called before closing
     //the buffer giving the buffers contents as parameter
     this.closeFunction = undefined;
+
+    //This is the function that will be called when tab
+    //key is pressed, for auto-completion
+    this.completionFunctioin = undefined;
 
     //Key binding to call the close Function
     var runBuffer = new Object();
@@ -232,6 +343,12 @@ function MiniBuffer(id){
     runBuffer.exec = function(e){runClose();};
 
     this.editor.commands.addCommand(runBuffer);
+
+    this.editor.commands.addCommand({
+	name:'runCompletion',
+	bindKey: {win: 'TAB', mac: 'TAB'},
+	exec: function(e){runCompletion()}
+	});
 
     //Visibility changing utility function
     this.setVisible = function(visibility){
@@ -244,13 +361,45 @@ function MiniBuffer(id){
 
     //Open a minibuffer using f as the 
     //collapse function
-    this.getInput = function(f){
+    this.getInput = function(args){
 
 	this.setVisible(true);
-	this.closeFunction = f;
+	this.closeFunction = args.closeFunction;
+	this.completionFunction = args.completionFunction;
 	this.editor.focus();
     };
 
+}
+
+//Return the editor where the cursor is currently located
+function getCurrentEditor(){
+
+    return editor;
+}
+
+//Function that is executed when a user presses Tab
+//inside the minibuffer, this function calls the current
+//completion function of the minibuffer and writes the
+//result to the minibuffer and editor.
+function runCompletion(){
+
+    var res;
+    if(miniBuffer.completionFunction){
+	res = miniBuffer.completionFunction(miniBuffer.editor.getValue());
+
+	//var pos = miniBuffer.editor.getCursorPosition();
+	miniBuffer.editor.session.doc.setValue(res.result);
+	//miniBuffer.editor.moveCursorToPosition(pos);
+	//miniBuffer.editor.focus();
+
+	if(res.completions){
+	    
+	    var editor = getCurrentEditor();
+	    miniBuffer.buffer.content = res.completions;
+	    editor.setBuffer(miniBuffer.buffer);
+	}
+    }
+    
 }
 
 //Function used to close the mini buffer
@@ -276,8 +425,7 @@ $(document).ready(function(){
     editor = new Frame('editor');
     editor.editor.setTheme("ace/theme/monokai");
     
-    var buffer = new Buffer("*scratch*",undefined);
-    buffers.push(buffer);
+    var buffer = createBuffer("*scratch*");
     editor.setBuffer(buffer);
 
     document.tersus.initMessaging();
