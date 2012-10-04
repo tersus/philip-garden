@@ -35,7 +35,7 @@ function Buffer(name,file){
     //The current content of the buffer
     this.content = "";
     //Used to create deltas when using differential synchronization
-    this.shadow = "";
+    this.shadow = [];
 }
 
 //Produce a new name for a buffer, this function ensures
@@ -129,6 +129,17 @@ function getBufferByName(name){
 //for searching
 RegExp.escape = function(text) {
     return text.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&");
+}
+
+//Given a buffer, it returns the editor where
+//that buffer is being edited if there is 
+//such editor, otherwise returns undefined
+function getEditorForBuffer(buffer){
+
+    if(editor.buffer.name == buffer.name)
+	return editor;
+
+    return undefined;
 }
 
 //Search for buffers that have a name similar to
@@ -245,6 +256,14 @@ function saveFile(editor){
 	
 }
 
+//Share a buffer with a user
+function shareBuffer(editor){
+
+    miniBuffer.getInput({closeFunction : function(user){
+	Sync.shareBuffer(editor.buffer,user);
+    }});
+}
+
 //Some emacs like shortcuts for the editor
 var FRAME_KEY_ACTIONS = [
     {name: 'findFile',
@@ -255,7 +274,10 @@ var FRAME_KEY_ACTIONS = [
      exec: saveFile},
     {name: 'setBuffer',
      bindKey : {win: 'Ctrl-X-B', mac: 'Command-X-B'},
-     exec: setBuffer}
+     exec: setBuffer},
+    {name: 'shareBuffer',
+     exec: shareBuffer,
+     bindKey: {win:'Ctrl-X-Z',mac: 'Command-X-Z'}}
     ];
 
 //A frame is asociated with a ace editor. The frame also knows which
@@ -277,6 +299,22 @@ function Frame(id){
     
     //Add key bindings
     keyBinder(this,FRAME_KEY_ACTIONS);
+
+    var updateFun = prelude.curry(function(changedEditor,e){
+	if(changedEditor.buffer)
+	    changedEditor.buffer.content = changedEditor.editor.getValue();
+	})(this);
+
+    this.editor.on('change',updateFun);    
+    
+    this.setValue = function(value){
+
+	var cursor = this.editor.getCursorPosition();
+	this.editor.session.doc.setValue(value);
+	this.editor.moveCursorToPosition(cursor);
+	this.buffer.content = this.editor.getValue();
+	
+    };
 }
     
 var keyBinder = prelude.curry(function(container,actions){
@@ -292,7 +330,8 @@ var keyBinder = prelude.curry(function(container,actions){
 	    fAction(editor);
 	    })(action,container);
 	
-	container.editor.commands.addCommand(cmd);
+	if(cmd.bindKey)
+	    container.editor.commands.addCommand(cmd);
     }
 });
 
@@ -379,6 +418,8 @@ function MiniBuffer(id){
 }
 
 //Return the editor where the cursor is currently located
+//Must be extended once more editors can be added in the same
+//window
 function getCurrentEditor(){
 
     return editor;
@@ -419,6 +460,71 @@ function runClose(miniBuffer){
     miniBuffer.setVisible(false);
 };
 
+//Basic messaging initialization backend
+//
+//Many features of philip garden can use
+//messaging. This function will dispatch
+//all messages received. It will inspect
+//the content property of a message as
+//a json object and from this object it
+//will check the the target property,
+//this property will be inspected against
+//a table of rules to determine what
+//function should be executed with this
+//message
+
+//This is the array that matches the diverse
+//targets for a message to the functions
+//that will be executed. Objects in this
+//array should have the property
+//anyUser for a generic function called
+//for any message received, and
+//targetUser, for functions that are
+//targeted to a user with the tersus api
+var msgRules = [];
+
+function defaultMessageCalleback(msg){
+
+    msg.content = eval("("+msg.content+")");
+
+    var action = msgRules[msg.content.target];
+
+    if(action && action.anyUser)
+	action.anyUser(msg);
+}
+
+function registerCallbackRule(rule,callback){
+
+    msgRules[rule] = callback;
+}
+
+//Dispatch function for messages targeted to
+//a specific user after a custom user callback
+//has been registered
+function userCallbackFunction(msg){
+
+    msg.content = eval("("+msg.content+")");
+
+    var action = msgRules[msg.content.target];
+
+    if(action && action.targetUser)
+	action.targetUser(msg);
+}
+
+//Register a callback dispatcher for a particular
+//user if such dispatcher dosen't exist yet
+function registerUserCallbackWrapper(user){
+
+    if(!document.tersus.REGISTERED_CALLBACKS[user]){
+	
+	//Temporary workaround while delivery status is not checked
+	document.tersus.sendMessageAsync([user],document.tersus.application,"{}",function(m){});
+
+	document.tersus.registerCallback(user,userCallbackFunction);
+    }
+
+}
+
 $(document).ready(function(){
 
     nArea = $('#notificationsArea');
@@ -432,5 +538,6 @@ $(document).ready(function(){
     var buffer = createBuffer("*scratch*");
     editor.setBuffer(buffer);
 
+    document.tersus.registerDefaultCallback(defaultMessageCalleback);
     document.tersus.initMessaging();
 });
