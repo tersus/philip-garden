@@ -232,11 +232,14 @@ function saveEditorFile(editor){
 function saveFile(editor){
 
     if(!editor.buffer.file){
-	miniBuffer.getInput(function(filename){
-	    
+
+	var createFileFun = prelude.curry(function(editor,filename){
 	    editor.buffer.file = filename;
 	    saveEditorFile(editor);
-	});
+	    })(editor);
+
+	miniBuffer.getInput({closeFunction: createFileFun});
+
     }else
 	saveEditorFile(editor);
 	
@@ -271,24 +274,28 @@ function Frame(id){
     //for referencing the Frame
     editors[id] = this;
     this.id = id;
-
-    for(var i = 0; i < FRAME_KEY_ACTIONS.length; i++){
-
-	var cmd = new Object();
-	cmd.name = FRAME_KEY_ACTIONS[i].name;
-	cmd.bindKey = FRAME_KEY_ACTIONS[i].bindKey;
-	cmd.editorId = id;
-	cmd.i = i;
-	cmd.exec = function(){
-
-	    var obj = editors[this.editorId];
-	    FRAME_KEY_ACTIONS[this.i].exec(obj);
-	    };
-
-	this.editor.commands.addCommand(cmd);
-    }
+    
+    //Add key bindings
+    keyBinder(this,FRAME_KEY_ACTIONS);
 }
     
+var keyBinder = prelude.curry(function(container,actions){
+    
+    for(var i = 0; i < actions.length; i++){
+
+	var cmd = new Object();
+	cmd.name = actions[i].name;
+	cmd.bindKey = actions[i].bindKey;
+		
+	var action = prelude.curry(actions[i].exec);
+	cmd.exec = prelude.curry(function(fAction,editor,e){
+	    fAction(editor);
+	    })(action,container);
+	
+	container.editor.commands.addCommand(cmd);
+    }
+});
+
 //Utility function to hide a frame
 Frame.prototype.setVisible = function(visibility){
 
@@ -314,6 +321,17 @@ Frame.prototype.setBuffer= function(buffer){
     this.editor.session.doc.setValue(this.buffer.content);
 };
 
+//Key bindings for the minibuffer
+var MINIBUFFER_KEY_ACTIONS = [
+    {name: 'runBuffer',
+     bindKey : {win: 'return', mac: 'return'},
+     exec: runClose},
+    {name: 'runCompletion',
+     bindKey : {win: 'TAB', mac: 'TAB'},
+     exec: runCompletion
+    }];
+
+
 //The minibuffer is the small text area below used to obtain
 //user input for many of the commands. If the mini-buffer is
 //invoked a specified function will be called with the user
@@ -336,19 +354,8 @@ function MiniBuffer(id){
     //key is pressed, for auto-completion
     this.completionFunctioin = undefined;
 
-    //Key binding to call the close Function
-    var runBuffer = new Object();
-    runBuffer.name = 'runBuffer';
-    runBuffer.bindKey = {win: 'return',  mac: 'return'};
-    runBuffer.exec = function(e){runClose();};
-
-    this.editor.commands.addCommand(runBuffer);
-
-    this.editor.commands.addCommand({
-	name:'runCompletion',
-	bindKey: {win: 'TAB', mac: 'TAB'},
-	exec: function(e){runCompletion()}
-	});
+    //Add key bindings
+    keyBinder(this,MINIBUFFER_KEY_ACTIONS);
 
     //Visibility changing utility function
     this.setVisible = function(visibility){
@@ -381,16 +388,13 @@ function getCurrentEditor(){
 //inside the minibuffer, this function calls the current
 //completion function of the minibuffer and writes the
 //result to the minibuffer and editor.
-function runCompletion(){
+function runCompletion(miniBuffer){
 
     var res;
     if(miniBuffer.completionFunction){
 	res = miniBuffer.completionFunction(miniBuffer.editor.getValue());
 
-	//var pos = miniBuffer.editor.getCursorPosition();
 	miniBuffer.editor.session.doc.setValue(res.result);
-	//miniBuffer.editor.moveCursorToPosition(pos);
-	//miniBuffer.editor.focus();
 
 	if(res.completions){
 	    
@@ -403,7 +407,7 @@ function runCompletion(){
 }
 
 //Function used to close the mini buffer
-function runClose(){
+function runClose(miniBuffer){
         
     if(miniBuffer.closeFunction)
 	miniBuffer.closeFunction(miniBuffer.editor.getValue());
