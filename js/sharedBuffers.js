@@ -209,7 +209,7 @@ Sync.receiveEdits = function(msg){
 
 	break;
 	
-    case EDIT_TYPE.replace:
+    case Sync.EDIT_TYPE.replace:
 	
 	if(editor){
 	    editor.setValue(updates.content);
