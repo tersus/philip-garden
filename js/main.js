@@ -1,9 +1,39 @@
-//Philip Garden
-//
-//Liscence: BSD
-//
-//Emacs-like text editor for the web that runs on top of tersus. It has the ability
-//to share files and syncronize updates
+/*
+Copyright (c) 2012, Tersus
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+    * Redistributions of source code must retain the above copyright
+      notice, this list of conditions and the following disclaimer.
+    * Redistributions in binary form must reproduce the above copyright
+      notice, this list of conditions and the following disclaimer in the
+      documentation and/or other materials provided with the distribution.
+    * Neither the name of the Tersus nor the
+      names of its contributors may be used to endorse or promote products
+      derived from this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL TERSUS BE LIABLE FOR ANY
+DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+----------------------------------------------------------------------------
+
+Philip Garden
+
+Liscence: BSD
+
+Emacs-like text editor for the web that runs on top of tersus. It has the ability
+to share files and syncronize updates
+
+*/
 
 function saveText(){
     tersus.writeFile("/Monad.hs",editor.editor.getValue(),function(msg){alert(msg)});
@@ -142,6 +172,20 @@ function getEditorForBuffer(buffer){
     return undefined;
 }
 
+function getElementsLike(name,array){
+
+    var eName = RegExp.escape(name);
+    var ret = [];
+
+    for(var i=0;i<array.length;i++){
+	
+	if(array[i].search(eName) == 0)
+	    ret.push(array[i]);
+    }
+
+    return ret;
+}
+
 //Search for buffers that have a name similar to
 //the given name
 function getBuffersLike(name){
@@ -180,27 +224,27 @@ function setBuffer(editor){
 	    editor.setBuffer(buffer);
 	    editor.editor.focus();
 	},
-	completionFunction:function(bufferName){
-
+	completionFunction:function(resObj){
 	    
-	    var suggestions = getBuffersLike(bufferName);
+	    var suggestions = getBuffersLike(resObj.value);
 
 	    var ret = new Object();
 
 	    if(suggestions.length == 1){
 	    	ret.result = suggestions[0].name;
 	    }else
-	    	ret.result=bufferName;
+	    	ret.result=resObj.value;
 
 	    ret.completions = "";
 
 	    for(var i=0;i<suggestions.length;i++)
 	    	ret.completions = ret.completions + suggestions[i].name + "\n";
 
-	    return ret;
-	    
+
+	    resObj.setValue(ret.result);
+	    resObj.setCompletions(ret.completions);	    
 	}
-	});
+    });
 }
 
 //Open a file and load it into a new buffer. This function uses
@@ -209,6 +253,9 @@ function setBuffer(editor){
 function openFile(editor){
 
     miniBuffer.getInput({
+	//This function loads the given filename into a buffer, the 
+	//filename will be whatever the user has written in the
+	//minibuffer.
 	closeFunction:function(filename){
 
 	    var buffer = getBufferByFilename(filename);
@@ -221,7 +268,43 @@ function openFile(editor){
 			       ,{'errorCallback' : function(e){openBuffer(editor,filename,"");}});
 
 	    editor.editor.focus();
-    }});
+	},
+	//This function generates the auto-complete suggestions for filename
+	//It will load all files inside the folder to which the text of the 
+	//minibuffer refers.
+	completionFunction:function(resObj){
+
+	    var lSlash = resObj.value.lastIndexOf("/");
+	    var folder = resObj.value.substr(0,lSlash+1);
+	    var fName = resObj.value.substr(lSlash+1);
+
+	    //Loading of file names is done asynchronously, so this function
+	    //is called once the filenames are loaded to populate the 
+	    //text areas with autocomplete suggestions.
+	    var doCompletion = prelude.curry(function(resObj,fName,folder,files){
+
+		if(!(files && files.length))
+		    return;
+
+		var completions = "";
+		var matches = getElementsLike(fName,files);
+		for(var i =0;i < matches.length;i++){
+		    completions = completions + matches[i] + "\n";
+		}
+
+		if(matches.length == 1){
+		    resObj.setValue(folder + matches[0]);
+		    resObj.setCompletions(undefined);
+		}else
+		    resObj.setCompletions(completions);
+
+	    })(resObj)(fName)(folder);
+	    
+	    document.tersus.getFile(folder,doCompletion);
+	    
+	}
+
+});
 }
 
 //Write the contents of the given editor into the file pointed by it's
@@ -316,7 +399,11 @@ function Frame(id){
 	
     };
 }
-    
+
+//Function used to bind shortcuts from Frames. This assumes
+//that the shortcuts have the same format as ACE requires
+//and that the function that should be run takes as an 
+//argument the Frame where the shortcut was pressed    
 var keyBinder = prelude.curry(function(container,actions){
     
     for(var i = 0; i < actions.length; i++){
@@ -368,7 +455,12 @@ var MINIBUFFER_KEY_ACTIONS = [
     {name: 'runCompletion',
      bindKey : {win: 'TAB', mac: 'TAB'},
      exec: runCompletion
-    }];
+    },
+    {name: 'runCancel',
+     bindKey : {win: 'Ctrl-G', mac: 'Command-G'},
+     exec: runCancel
+    },
+];
 
 
 //The minibuffer is the small text area below used to obtain
@@ -393,6 +485,14 @@ function MiniBuffer(id){
     //key is pressed, for auto-completion
     this.completionFunctioin = undefined;
 
+    //Function that is executed if the cancel command is
+    //called in the minibuffer
+    this.cancelFunction = undefined;
+
+    //Holds the buffer contained in the editor before
+    //calling the minibuffer
+    this.lastBuffer = undefined;
+
     //Add key bindings
     keyBinder(this,MINIBUFFER_KEY_ACTIONS);
 
@@ -405,13 +505,30 @@ function MiniBuffer(id){
 	    this.div.css('visibility','hidden');
     };
 
-    //Open a minibuffer using f as the 
-    //collapse function
+    //This function opens the minibuffer and set the 
+    //cursor there ready for input. Args should contain
+    //the properties closeFunction, completionFunction
+    //and cancelFunction. Only closeFunction is really needed
+    //since this is the function that will be called with the
+    //user input from the minibuffer as argument after the user
+    //presses enter. The completionFunction will be called when
+    //the user presses tab and used to generate autocomplete
+    //suggestions. The cancelFunction is usually not necessary,
+    //but it's called if the user cancels the minibuffer input
     this.getInput = function(args){
 
+	this.lastBuffer = getCurrentEditor().buffer;
 	this.setVisible(true);
 	this.closeFunction = args.closeFunction;
 	this.completionFunction = args.completionFunction;
+
+	if(args.cancelFunction){
+	    this.cancelFunction = args.cancelFunction;
+	}else
+	    this.cancelFunction = prelude.curry(function(miniBuffer,c){
+		getCurrentEditor().setBuffer(miniBuffer.lastBuffer);
+	    })(this);
+
 	this.editor.focus();
     };
 
@@ -427,24 +544,78 @@ function getCurrentEditor(){
 
 //Function that is executed when a user presses Tab
 //inside the minibuffer, this function calls the current
-//completion function of the minibuffer and writes the
-//result to the minibuffer and editor.
+//completion function, sendin as parameter a object where
+//the completions can be written. This was done that way
+//so asynchronous calls can be easily handeled by the
+//completion functions
 function runCompletion(miniBuffer){
 
-    var res;
     if(miniBuffer.completionFunction){
-	res = miniBuffer.completionFunction(miniBuffer.editor.getValue());
+    
+	//This function should be called by the completion
+	//function to replace the value of the miniBuffer.
+	//As an argument it takes the new text that should be
+	//placed in the minibuffer.
+	var setValueFun = prelude.curry(function(editor,value){
 
-	miniBuffer.editor.session.doc.setValue(res.result);
+	    editor.session.doc.setValue(value);
+	})(miniBuffer.editor);
 
-	if(res.completions){
-	    
+	//This is the function that should be called by the completion
+	//function binded to this autocomplete call if the function wishes
+	//to give auto-complete suggestions. If undefined is given as a 
+	//parameter, the previous buffer of the editor will be placed
+	var setCompletionsFun = prelude.curry(function(miniBuffer,completion){
+
 	    var editor = getCurrentEditor();
-	    miniBuffer.buffer.content = res.completions;
-	    editor.setBuffer(miniBuffer.buffer);
-	}
+	    if(completion){		
+		miniBuffer.buffer.content = completion;
+		editor.setBuffer(miniBuffer.buffer);
+		editor.setValue(completion);
+	    }else{
+		
+		editor.setBuffer(miniBuffer.lastBuffer);
+	    }
+	})(miniBuffer);
+
+	var res = {
+	    //Calling this funciton will replace the value in the minibuffer
+	    setValue: setValueFun,
+	    //Calling this function will open the buffer with completion suggestions
+	    setCompletions : setCompletionsFun,
+	    //This is the current text in the minibuffer
+	    value : miniBuffer.editor.getValue()
+	};
+
+	miniBuffer.completionFunction(res);
+
     }
     
+}
+
+//This function resets the values of the minibuffer
+//to the defaults usualy set when no minibuffer was
+//invoked
+function resetMinibuffer(miniBuffer){
+    
+    miniBuffer.closeFunction = undefined;
+    miniBuffer.cancelFunction = undefined;
+    miniBuffer.completionFunction = undefined;
+    miniBuffer.lastBuffer = undefined;
+    miniBuffer.editor.setValue("");
+
+    miniBuffer.setVisible(false);
+
+    getCurrentEditor().editor.focus();
+}
+
+//Function used to cancel a mini buffer
+function runCancel(miniBuffer){
+
+    if(miniBuffer.cancelFunction)
+	miniBuffer.cancelFunction(miniBuffer.editor.getValue());
+
+    resetMinibuffer(miniBuffer);
 }
 
 //Function used to close the mini buffer
@@ -453,11 +624,7 @@ function runClose(miniBuffer){
     if(miniBuffer.closeFunction)
 	miniBuffer.closeFunction(miniBuffer.editor.getValue());
     
-    miniBuffer.closeFunction = undefined;
-    
-    miniBuffer.editor.setValue("");
-
-    miniBuffer.setVisible(false);
+    resetMinibuffer(miniBuffer);
 };
 
 //Basic messaging initialization backend
