@@ -209,6 +209,27 @@ function createBuffer(name){
     return buffer;
 }
 
+//Navigation functions
+function navUp(editor){
+
+    editor.editor.navigateUp();
+}
+
+function navDown(editor){
+
+    editor.editor.navigateDown();
+}
+
+function navLeft(editor){
+    
+    editor.editor.navigateLeft();
+}
+
+function navRight(editor){
+
+    editor.editor.navigateRight();
+}
+
 //Request a buffer name through the minibuffer
 //and set that buffer in the current editor
 function setBuffer(editor){
@@ -348,20 +369,62 @@ function shareBuffer(editor){
 }
 
 //Some emacs like shortcuts for the editor
-var FRAME_KEY_ACTIONS = [
+
+//File opening key bindings
+var FILE_ACTIONS = [
     {name: 'findFile',
      bindKey : {win: 'Ctrl-X-Ctrl-F', mac: 'Command-X-Command-F'},
      exec: openFile},
     {name: 'writeFile',
      bindKey : {win: 'Ctrl-X-Ctrl-S', mac: 'Command-X-Command-S'},
-     exec: saveFile},
+     exec: saveFile}
+];
+
+//Buffer key bindings
+var BUFFER_ACTIONS = [
     {name: 'setBuffer',
      bindKey : {win: 'Ctrl-X-B', mac: 'Command-X-B'},
      exec: setBuffer},
     {name: 'shareBuffer',
      exec: shareBuffer,
      bindKey: {win:'Ctrl-X-Z',mac: 'Command-X-Z'}}
+];
+
+//Navigation key bindings
+var NAVIGATION_ACTIONS = [
+    {name: 'navUp',
+     exec: navUp,
+     bindKey: {win:'Ctrl-P',mac: 'Command-P'}},
+    {name: 'navDown',
+     exec: navDown,
+     bindKey: {win:'Ctrl-M',mac: 'Command-M'}},
+    {name: 'navLeft',
+     exec: navLeft,
+     bindKey: {win:'Ctrl-B',mac: 'Command-B'}},
+    {name: 'navRight',
+     exec: navRight,
+     bindKey: {win:'Ctrl-F',mac: 'Command-F'}}
     ];
+
+//Key bindings for the minibuffer
+var MINIBUFFER_RUN =[
+    {name: 'runBuffer',
+     bindKey : {win: 'return', mac: 'return'},
+     exec: runClose},
+    {name: 'runCompletion',
+     bindKey : {win: 'TAB', mac: 'TAB'},
+     exec: runCompletion
+    },
+    {name: 'runCancel',
+     bindKey : {win: 'Ctrl-G', mac: 'Command-G'},
+     exec: runCancel
+    },
+];
+
+
+var FRAME_KEY_ACTIONS = prelude.concat([FILE_ACTIONS,BUFFER_ACTIONS,NAVIGATION_ACTIONS]);
+var MINIBUFFER_KEY_ACTIONS = prelude.concat([NAVIGATION_ACTIONS,MINIBUFFER_RUN]);
+
 
 //A frame is asociated with a ace editor. The frame also knows which
 //buffer it's currently opened in that editor. Also the html div element
@@ -446,22 +509,6 @@ Frame.prototype.setBuffer= function(buffer){
     this.buffer = buffer;
     this.editor.session.doc.setValue(this.buffer.content);
 };
-
-//Key bindings for the minibuffer
-var MINIBUFFER_KEY_ACTIONS = [
-    {name: 'runBuffer',
-     bindKey : {win: 'return', mac: 'return'},
-     exec: runClose},
-    {name: 'runCompletion',
-     bindKey : {win: 'TAB', mac: 'TAB'},
-     exec: runCompletion
-    },
-    {name: 'runCancel',
-     bindKey : {win: 'Ctrl-G', mac: 'Command-G'},
-     exec: runCancel
-    },
-];
-
 
 //The minibuffer is the small text area below used to obtain
 //user input for many of the commands. If the mini-buffer is
