@@ -172,19 +172,6 @@ function getEditorForBuffer(buffer){
     return undefined;
 }
 
-function getElementsLike(name,array){
-
-    var eName = RegExp.escape(name);
-    var ret = [];
-
-    for(var i=0;i<array.length;i++){
-	
-	if(array[i].search(eName) == 0)
-	    ret.push(array[i]);
-    }
-
-    return ret;
-}
 
 //Search for buffers that have a name similar to
 //the given name
@@ -308,13 +295,21 @@ function openFile(editor){
 		    return;
 
 		var completions = "";
-		var matches = getElementsLike(fName,files);
+		var matches = prelude.filter(prelude.curry(function(fname,elem){
+
+		    if(elem.name.search(fname) == 0)
+			return true;
+		    else
+			return false;
+
+		})(fName),files);
+
 		for(var i =0;i < matches.length;i++){
-		    completions = completions + matches[i] + "\n";
+		    completions = completions + matches[i].name + "\n";
 		}
 
 		if(matches.length == 1){
-		    resObj.setValue(folder + matches[0]);
+		    resObj.setValue(folder + matches[0].name);
 		    resObj.setCompletions(undefined);
 		}else
 		    resObj.setCompletions(completions);
@@ -373,7 +368,7 @@ function shareBuffer(editor){
 //File opening key bindings
 var FILE_ACTIONS = [
     {name: 'findFile',
-     bindKey : {win: 'Ctrl-X-Ctrl-F', mac: 'Command-X-Command-F'},
+     bindKey : {win: 'Ctrl-X-F', mac: 'Command-X-Command-F'},
      exec: openFile},
     {name: 'writeFile',
      bindKey : {win: 'Ctrl-X-Ctrl-S', mac: 'Command-X-Command-S'},
