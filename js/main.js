@@ -255,6 +255,14 @@ function setBuffer(editor){
     });
 }
 
+//Load the specified file into the specified editor
+function loadFile(editor,filename){
+
+    tersus.getFile(filename
+		   ,function(c){openBuffer(editor,filename,c);}
+		   ,{'errorCallback' : function(e){openBuffer(editor,filename,"");}});
+}
+
 //Open a file and load it into a new buffer. This function uses
 //the minibuffer to get the filename from the user and puts
 //the contents of the file in the given editor.
@@ -271,9 +279,7 @@ function openFile(editor){
 	    if(buffer)
 		editor.setBuffer(buffer);
 	    else
-		tersus.getFile(filename
-			       ,function(c){openBuffer(editor,filename,c);}
-			       ,{'errorCallback' : function(e){openBuffer(editor,filename,"");}});
+		loadFile(editor,filename);
 
 	    editor.editor.focus();
 	},
@@ -734,6 +740,13 @@ function registerUserCallbackWrapper(user){
 
 }
 
+function loadFileArgs(){
+
+    var files = document.tersus.getArgv();
+
+    files.map(function(f){loadFile(getCurrentEditor(),f)});
+}
+
 $(document).ready(function(){
 
     nArea = $('#notificationsArea');
@@ -749,4 +762,6 @@ $(document).ready(function(){
 
     document.tersus.registerDefaultCallback(defaultMessageCalleback);
     document.tersus.initMessaging();
+
+    loadFileArgs();
 });
