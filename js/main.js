@@ -424,7 +424,7 @@ var MINIBUFFER_RUN =[
 
 
 var FRAME_KEY_ACTIONS = prelude.concat([FILE_ACTIONS,BUFFER_ACTIONS]);//,NAVIGATION_ACTIONS]);
-var MINIBUFFER_KEY_ACTIONS = prelude.concat([NAVIGATION_ACTIONS,MINIBUFFER_RUN]);
+var MINIBUFFER_KEY_ACTIONS = prelude.concat([MINIBUFFER_RUN]);
 
 
 //A frame is asociated with a ace editor. The frame also knows which
