@@ -1,12 +1,13 @@
 <!DOCTYPE html>
-<html>
-  <head>
+<html ng-app>
+  <head>    
     <link href="static/bootstrap/css/bootstrap.css" rel="stylesheet"/>
     <link href="static/bootstrap/css/bootstrap-responsive.css" rel="stylesheet"/>
     <link href="css/miniBuffer.css" rel="stylesheet"/>
     <link href="css/notifications.css" rel="stylesheet"/>
     <link href="css/clearFix.css" rel="stylesheet"/>
-    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.8.0/jquery.min.js"></script>
+    <script src="js/angular.min.js"></script>
+    <script src="js/jquery.min.js"></script>
     <script src="/static/api/Tersus.js"></script>
     <script src="js/prelude-browser-min.js"></script>
     <script src="js/ace/ace.js" type="text/javascript"></script>
@@ -14,6 +15,9 @@
     <script src="js/diff_match_patch.js" type="text/javascript"></script>
     <script src="js/sharedBuffers.js" type="text/javascript"></script>
     <script src="js/main.js" type="text/javascript" ></script>
+    <script src="js/controllers/PhilipGarden.js" type="text/javascript" ></script>
+    <script src="js/controllers/DirFileCtrl.js" type="text/javascript" ></script>
+    <script src="js/controllers/BufferCtrl.js" type="text/javascript" ></script>
     <script src="static/bootstrap/js/bootstrap.min.js"></script>
     
 
@@ -29,7 +33,7 @@
       }
     </style>
   </head>
-  <body>
+  <body ng-controller="PhilipGarden">
     <div class="navbar navbar-inverse navbar-fixed-top">
       <div class="navbar-inner">
         <div class="container">
@@ -82,22 +86,20 @@
         </div><!-- container -->
       </div><!-- navbar-inner -->
     </div><!-- navbar -->
-
-<div class="container-fluid">
-          
-</div>
     
     <div class="container">
       <div class="row-fluid">
         <div class="span2">
           <ul class="nav nav-list">
-            <li class="nav-header">Buffers</li>
-            <li class="active"><a href="#">/</a></li>
-            <li><a href="#">Monad.hs</a></li>
+            <div ng-controller="BufferCtrl">              
+              <li class="nav-header">Buffers {{buffer_count}}</li>
+              <li ng-repeat="buffer in buffers"><a href="{{buffer.name}}#">{{buffer.name}}</a></li>
+            </div>
             <li class="divider"></li>
-            <li class="nav-header">Files in / </li>
-            <li><a href="#">/</a></li>
-            <li><a href="#">Monad2.hs</a></li>
+            <div ng-controller="DirFileCtrl">              
+              <li class="nav-header">Files in {{dirfiles.dir_name}} </li>
+              <li ng-repeat="file in dirfiles"><a href="{{file.name}}#">{{file.name}}</a></li>
+            </div>
           </ul>
           <!--Sidebar content-->
         </div>
@@ -106,10 +108,9 @@
           <div class="row">
             <!-- breadcrumb example, if a directory is picked, a dropdown menu should follow -->
             <ul class="breadcrumb">
-              <li><a href="javascript:openFile('/')">/</a></li>
-              <li><a href="javascript:openFile('/haskell)">haskell</a><span class="divider">/</span></li>
-              <li><a href="javascript:openFile('/haskell/p1/')">p1</a><span class="divider">/</span></li>
-              <li class="active">Main.hs</li>
+              <div ng-controller="DirFileCtrl">              
+                <li><a href="javascript:openFile('/')">{{dir_name}}</a>- {{date}}</li>
+              </div>
             </ul>
           </div>
 
