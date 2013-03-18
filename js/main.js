@@ -35,9 +35,9 @@ to share files and syncronize updates
 
 */
 
-function saveText(){
+/*function saveText(){
     tersus.writeFile("/Monad.hs",editor.editor.getValue(),function(msg){alert(msg)});
-}
+}*/
 
 function populateTextArea(content){ editor.editor.setValue(content); }
 
@@ -257,10 +257,11 @@ function setBuffer(editor){
 
 //Load the specified file into the specified editor
 function loadFile(editor,filename){
+    console.log("Loading file " + filename);
 
     tersus.getFile(filename
-		   ,function(c){openBuffer(editor,filename,c);}
-		   ,{'errorCallback' : function(e){openBuffer(editor,filename,"");}});
+		   ,function(file_contents){openBuffer(editor,filename,file_contents);}
+		   ,{'InexistentFile' : function(e){openBuffer(editor,filename,"");}});
 }
 
 //Open a file and load it into a new buffer. This function uses
@@ -346,18 +347,15 @@ function saveEditorFile(editor){
 //has a file asociated with it. If not, the filename is requested
 //through the mini-buffer
 function saveFile(editor){
-
     if(!editor.buffer.file){
-
-	var createFileFun = prelude.curry(function(editor,filename){
-	    editor.buffer.file = filename;
-	    saveEditorFile(editor);
+	    var createFileFun = prelude.curry(function(editor,filename){
+	        editor.buffer.file = filename;
+	        saveEditorFile(editor);
 	    })(editor);
 
-	miniBuffer.getInput({closeFunction: createFileFun});
-
-    }else
-	saveEditorFile(editor);
+	    miniBuffer.getInput({closeFunction: createFileFun});
+    } else
+	    saveEditorFile(editor);
 	
 }
 

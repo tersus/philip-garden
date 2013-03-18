@@ -82,28 +82,49 @@
         </div><!-- container -->
       </div><!-- navbar-inner -->
     </div><!-- navbar -->
+
+<div class="container-fluid">
+          
+</div>
     
     <div class="container">
-      <div class="row">
-        <!-- breadcrumb example, if a directory is picked, a dropdown menu should follow -->
-        <ul class="breadcrumb">
-          <li><a href="javascript:openFile('/')">/</a></li>
-          <li><a href="javascript:openFile('/haskell)">haskell</a><span class="divider">/</span></li>
-          <li><a href="javascript:openFile('/haskell/p1/')">p1</a><span class="divider">/</span></li>
-          <li class="active">Main.hs</li>
-        </ul>
-      </div>
+      <div class="row-fluid">
+        <div class="span2">
+          <ul class="nav nav-list">
+            <li class="nav-header">Buffers</li>
+            <li class="active"><a href="#">/</a></li>
+            <li><a href="#">Monad.hs</a></li>
+            <li class="divider"></li>
+            <li class="nav-header">Files in / </li>
+            <li><a href="#">/</a></li>
+            <li><a href="#">Monad2.hs</a></li>
+          </ul>
+          <!--Sidebar content-->
+        </div>
+        <div class="span10">
+          <!--Body content-->        
+          <div class="row">
+            <!-- breadcrumb example, if a directory is picked, a dropdown menu should follow -->
+            <ul class="breadcrumb">
+              <li><a href="javascript:openFile('/')">/</a></li>
+              <li><a href="javascript:openFile('/haskell)">haskell</a><span class="divider">/</span></li>
+              <li><a href="javascript:openFile('/haskell/p1/')">p1</a><span class="divider">/</span></li>
+              <li class="active">Main.hs</li>
+            </ul>
+          </div>
 
-      <div class="row">        
-        <div id="editor" class="span12"></div>
-      </div>
-      
-      <div class="row">
-        <div class="span12 notifications" id="notificationsArea"></div>
-      </div>
-      
-      <div class="row">
-        <div class="span12 miniBufferStyle" id="miniBuffer"></div>
+          <div class="row">        
+            <div id="editor"></div>
+          </div>
+          
+          <div class="row">
+            <div class="notifications" id="notificationsArea"></div>
+          </div>
+          
+          <div class="row">
+            <div class="miniBufferStyle" id="miniBuffer"></div>
+          </div>
+        </div>
       </div>
     </div>
   </div> 
