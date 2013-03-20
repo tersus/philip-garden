@@ -749,17 +749,46 @@ $(document).ready(function(){
 
     nArea = $('#notificationsArea');
 
-    miniBuffer = new MiniBuffer('miniBuffer');
-    miniBuffer.setVisible(false);
+    //var minibuffer = $("#PhilipGarden").scope().minibuffer;
+    //alert(minibuffer);
+    //keyBinder(minibuffer,FRAME_KEY_ACTIONS);
+    //miniBuffer = new MiniBuffer('miniBuffer');
+    //miniBuffer.setVisible(false);
 
-    editor = new Frame('editor');
-    editor.editor.setTheme("ace/theme/monokai");
+    //editor = new Frame('editor');
+    //editor.editor.setTheme("ace/theme/monokai");
     
     var buffer = createBuffer("*scratch*");
-    editor.setBuffer(buffer);
-
+    //editor.setBuffer(buffer);
+    
+    //myMinibuffer = new Editor(
+     //       new VirtualRenderer("miniBuffer","ace/theme/monokai"),
+      //      new EditSession($scope.minibuffer_document, "ace/text"));
+    
     document.tersus.registerDefaultCallback(defaultMessageCalleback);
     document.tersus.initMessaging();
 
     loadFileArgs();
 });
+
+var main = angular.module('Main', []);
+
+/*main.factory('$editorService', function($rootScope){
+    var editorService = {};
+
+    editorService.setBuffer = function(filename){
+        console.log("editorService.filename: ");
+        console.log(filename);
+        $rootScope.$broadcast('setEditorBuffer',filename);
+    }
+
+    return editorService;
+});*/
+
+main.factory('$tersus', function($rootScope){
+    return document.tersus;
+});
+
+//PhilipGarden.$inject = ['$scope','$editorService']
+//BufferCtrl.$inject = ['$scope','$editorService']
+DirFileCtrl.$inject = ['$scope', '$rootScope', '$tersus']
