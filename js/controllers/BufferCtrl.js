@@ -1,38 +1,40 @@
-function BufferCtrl($scope){
-    var scratch_buffer = {
-        name: "*scratch*", 
-        active: true
-    }        
-
-    $scope.buffers = [
-        scratch_buffer,
-        { name: "Buffer x", active: false }
-    ]
-    
-    // finds current buffer (the one with active: true)
-    $scope.current_buffer = prelude.find(function(b){ return b.active }, $scope.buffers);
-
-    $scope.buffer_count = $scope.buffers.length;    
-
-    // functions
-    var findBuffer = function (buffer_name){
-        var byName = function(buffer){ return buffer.name == buffer_name;}
-        return prelude.find(byName, $scope.buffers)
+function BufferCtrl($scope,$rootScope){
+    $scope.scratch_buffer = {
+        name: "*scratch*",
+        active: true,
+        contents: 'Hello! \n\tYou should try opening a file. :-)\n Philip Garden'
     }
 
-    // actions
-    $scope.$on('setEditorBuffer', function(event,buffer_name){        
-        $scope.current_buffer.active = false;
-        
-        buffer = findBuffer(buffer_name);
-        if (!buffer){            
-            buffer = {name : buffer_name, active: true}; //create new buffer 
-            $scope.buffers.push(buffer);
-        }
-        console.log(buffer);
-        console.log($scope.buffers);
-        //$scope.current_buffer = buffer;
-    })
+    $scope.buffers = [$scope.scratch_buffer, {name:"?",active:false,contents:'$'}]
 
+    // finds current buffer (the one with active: true)
+    $scope.getCurrentBuffer = function(){
+        return prelude.find(function(b){ return b.active==true }, $scope.buffers);
+    }
+
+    $scope.buffer_count = $scope.buffers.length;    
+    
     $scope.getActiveClass = function(buffer){ if (buffer.active){return 'active';} else return ''; }
+    
+    /*
+     * Opens a buffer, if it doesn't exist, opens the file path represented by the buffer name
+     * @param buffer_name - the buffer name
+     */     
+    $scope.openBuffer = function(buffer_name){ 
+        console.log("current");
+        console.log($scope.getCurrentBuffer());
+        $scope.getCurrentBuffer().active = false;
+        
+        buffer = prelude.find(function(buffer){ return buffer.name == buffer_name;}, $scope.buffers)        
+        console.log(buffer);
+
+        if (!buffer){
+            buffer = {name : buffer_name, active: true}; //create new buffer
+            $scope.$apply($scope.buffers.push(buffer));
+        } else{
+            buffer.active = true;
+        }
+        $rootScope.notification = "Opened " + buffer_name
+    }
+    $scope.$on('openBuffer', function(e,b){ $scope.openBuffer(b)});
 }

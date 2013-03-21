@@ -18,14 +18,11 @@ function DirFileCtrl($scope,$rootScope,$tersus){
      * Lists files contained in current_dir
      * @param fullpath - a String, the full path of the directory to get the contents from
      */ 
-    $scope.getDirectoryFiles = function(fullpath){
-        console.log("Getting directory files of : " + fullpath)
-
-        //get file, a file has fields 'name', 'is_directory' and 'content', content may be an array of files
+    $scope.getDirectoryFiles = function(fullpath){        
         $tersus.getFileContents(fullpath,
                                 function callback(response){
-                                    console.log(response.contents);
-//                                    $scope.current_dir = response
+                                    //afile has fields 'name', 'is_directory' and 'content', 
+                                    //content may be an array of files
                                     $scope.current_dir_contents = response.contents
                                     $scope.current_dir_is_directory = response.is_directory
                                     $scope.current_dir_path = response.path                                    
@@ -71,9 +68,7 @@ function DirFileCtrl($scope,$rootScope,$tersus){
             console.log($scope.current_dir.path)            
         }
         else
-            console.log("TODO");
-                            
-        //console.log("openFile#newPath" + $scope.mkCurrentPath());        
+            console.log("TODO");                            
     }
     
     /*

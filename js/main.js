@@ -752,7 +752,7 @@ $(document).ready(function(){
     //var minibuffer = $("#PhilipGarden").scope().minibuffer;
     //alert(minibuffer);
     //keyBinder(minibuffer,FRAME_KEY_ACTIONS);
-    //miniBuffer = new MiniBuffer('miniBuffer');
+    //miniBuffer = new MiniBuffer('minibuffer');
     //miniBuffer.setVisible(false);
 
     //editor = new Frame('editor');
@@ -773,7 +773,7 @@ $(document).ready(function(){
 
 var main = angular.module('Main', []);
 
-/*main.factory('$editorService', function($rootScope){
+main.factory('$editorService', function($rootScope){
     var editorService = {};
 
     editorService.setBuffer = function(filename){
@@ -783,12 +783,12 @@ var main = angular.module('Main', []);
     }
 
     return editorService;
-});*/
+});
 
 main.factory('$tersus', function($rootScope){
     return document.tersus;
 });
 
-//PhilipGarden.$inject = ['$scope','$editorService']
-//BufferCtrl.$inject = ['$scope','$editorService']
+PhilipGarden.$inject = ['$scope','$rootScope']
+BufferCtrl.$inject = ['$scope','$rootScope']
 DirFileCtrl.$inject = ['$scope', '$rootScope', '$tersus']
