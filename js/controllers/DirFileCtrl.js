@@ -19,22 +19,22 @@ function DirFileCtrl($scope,$rootScope,$tersus){
      * @param fullpath - a String, the full path of the directory to get the contents from
      */ 
     $scope.getDirectoryFiles = function(fullpath){        
-        $tersus.getFileContents(fullpath,
-                                function callback(response){
-                                    //afile has fields 'name', 'is_directory' and 'content', 
-                                    //content may be an array of files
-                                    $scope.current_dir_contents = response.contents
-                                    $scope.current_dir_is_directory = response.is_directory
-                                    $scope.current_dir_path = response.path                                    
-                                },
-                                function onError(e){console.log(e)})
+        $tersus.getFile(fullpath,
+                        function callback(response){
+                            //afile has fields 'name', 'is_directory' and 'content', 
+                            //content may be an array of files
+                            $scope.current_dir_contents = response.contents
+                            $scope.current_dir_is_directory = response.is_directory
+                            $scope.current_dir_path = response.path                                    
+                        },
+                        function onError(e){console.log(e)})
         
         //console.log($scope.current_dir.contents[0]);
         if ($scope.current_dir_is_directory)
             return $scope.current_dir_contents;
         else
             return []; 
-    } 
+    }
 
     $rootScope.current_dir = {
         filename: $scope.current_dir_name // its name
@@ -53,7 +53,7 @@ function DirFileCtrl($scope,$rootScope,$tersus){
 
         if (file.is_directory){
             $scope.current_dir_path = file.path
-            $scope.current_dir.contents = $scope.getDirectoryFiles(file.path)                                    
+            $scope.current_dir.contents = $scope.getDirectoryFiles(file.path)
             index = $rootScope.current_path.indexOf(file);
 
             console.log("index: " + index)
@@ -65,10 +65,10 @@ function DirFileCtrl($scope,$rootScope,$tersus){
             
             console.log($rootScope.current_path);
             $scope.current_filepath = file.path
-            console.log($scope.current_dir.path)            
+            console.log($scope.current_dir.path)
         }
         else
-            console.log("TODO");                            
+            $rootScope.$broadcast('openBuffer', file.path);
     }
     
     /*

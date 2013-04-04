@@ -1,5 +1,5 @@
-function BufferCtrl($scope,$rootScope){
-    $scope.scratch_buffer = {
+function BufferCtrl($scope,$rootScope,$tersus){
+    $rootScope.scratch_buffer = {
         name: "*scratch*",
         active: true,
         contents: 'Hello! \n\tYou should try opening a file. :-)\n Philip Garden'
@@ -9,7 +9,9 @@ function BufferCtrl($scope,$rootScope){
 
     // finds current buffer (the one with active: true)
     $scope.getCurrentBuffer = function(){
-        return prelude.find(function(b){ return b.active==true }, $scope.buffers);
+        current = prelude.find(function(b){ return b.active==true }, $scope.buffers);
+        $rootScope.current_buffer = current;
+        return current;
     }
 
     $scope.buffer_count = $scope.buffers.length;    
@@ -21,20 +23,29 @@ function BufferCtrl($scope,$rootScope){
      * @param buffer_name - the buffer name
      */     
     $scope.openBuffer = function(buffer_name){ 
-        console.log("current");
-        console.log($scope.getCurrentBuffer());
-        $scope.getCurrentBuffer().active = false;
-        
-        buffer = prelude.find(function(buffer){ return buffer.name == buffer_name;}, $scope.buffers)        
-        console.log(buffer);
+        console.log("Openning buffer: "+buffer_name);
 
+        $scope.getCurrentBuffer().active = false;        
+        buffer = prelude.find(function(buffer){ return buffer.name == buffer_name;}, $scope.buffers)
         if (!buffer){
-            buffer = {name : buffer_name, active: true}; //create new buffer
+            buffer = {name : $tersus.pathToFilename(buffer_name), active: true}; //create new buffer
             $scope.$apply($scope.buffers.push(buffer));
-        } else{
+            fullpath = buffer_name
+
+            // get the contents of the file
+            $tersus.getFileContents(fullpath,
+                            function callback(file_content){
+                                //when the file exists
+                                console.log(file_content);
+                                $scope.getCurrentBuffer().contents = file_content
+                            },
+                            function onError(e){ console.log(e)})
+        } else
             buffer.active = true;
-        }
-        $rootScope.notification = "Opened " + buffer_name
+        
+        $rootScope.$broadcast('setEditorValue',$scope.getCurrentBuffer().contents)
+        $rootScope.$broadcast('notify',"Opened " + buffer_name);
     }
+
     $scope.$on('openBuffer', function(e,b){ $scope.openBuffer(b)});
 }

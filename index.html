@@ -95,13 +95,13 @@
       <div class="row-fluid">
         <div class="span2">
           <div ng-controller="BufferCtrl">
-          <ul class="nav nav-list">            
+          <ul class="nav nav-list">
               <li class="nav-header">Buffers {{buffer_count}}</li>
               <li ng-repeat="buffer in buffers" ng-class="getActiveClass(buffer)" ng-click="openBuffer(buffer.name)"><a href="#">{{buffer.name}}</a></li>
           </ul>
           </div>
           <div ng-controller="DirFileCtrl">
-            <ul class="nav nav-list">                        
+            <ul class="nav nav-list">   
               <li class="nav-header">> {{current_dir.filename}} </li>
               <li ng-repeat="file in current_dir.contents" ng-click="openFile(file)"><a href="#">{{file.filename}}</a></li>
             </ul>
@@ -120,16 +120,16 @@
             </div>
           </div>
           
-          <div class="row" ng-controller="PhilipGarden" id="minibuffer-wrapper" ng-init="mkMiniBuffer()" >
+          <div class="row" ng-controller="PhilipGarden" id="minibuffer-wrapper" ng-init="mkMiniBuffer()">
             <div ng-model="minibuffer" id="minibuffer"></div>
           </div>
 
           <div class="row" id="notifications-wrapper" ng-controller="PhilipGarden">
-            <div ng-model="notification" class="notifications" id="notificationsArea"></div>
+            <div class="notifications" id="notificationsArea">{{last_notification}}</div>
           </div>                    
 
-          <div class="row" id="editor-wrapper" ng-controller="PhilipGarden">
-            <div id="editor">{{current_buffer.contents}}</div>
+          <div class="row" id="editor-wrapper" ng-controller="PhilipGarden" ng-init="mkEditor()">
+            <div id="editor"></div>
           </div>
         </div>
       </div>

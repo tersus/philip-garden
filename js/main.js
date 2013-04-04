@@ -790,5 +790,5 @@ main.factory('$tersus', function($rootScope){
 });
 
 PhilipGarden.$inject = ['$scope','$rootScope']
-BufferCtrl.$inject = ['$scope','$rootScope']
+BufferCtrl.$inject = ['$scope','$rootScope','$tersus']
 DirFileCtrl.$inject = ['$scope', '$rootScope', '$tersus']

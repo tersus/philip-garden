@@ -1,6 +1,7 @@
 function PhilipGarden($scope,$rootScope){
     $rootScope.current_path = [$rootScope.root]    
-    
+    $rootScope.current_buffer = $rootScope.scratch_buffer
+
     $scope.minibuffer = ace.edit("minibuffer")
     $scope.minibuffer.hide = function(){
         $("#minibuffer").css('visibility','hidden')
@@ -12,11 +13,6 @@ function PhilipGarden($scope,$rootScope){
     $scope.minibuffer.onClose = '' // function to broadcast when minibuffer is closed
 
     $scope.minibuffer.onReturn = function(buf){
-        console.log("on return");
-        console.log(buf);
-        console.log("broadcasting minibuffer value");
-        console.log(buf.getValue());
-        console.log("broadcasting to " + $scope.minibuffer.onClose)
         $rootScope.$broadcast($scope.minibuffer.onClose,buf.getValue())
     }
 
@@ -29,18 +25,28 @@ function PhilipGarden($scope,$rootScope){
     }
     
     $scope.minibuffer.read = function(){
-        console.log("read");
         $scope.minibuffer.show();
         $scope.minibuffer.focus();
     }
 
     $scope.date = new Date();
 
-    $rootScope.notification = ""
+    $rootScope.notifications = ["Welcome!"]
+    $rootScope.last_notification = $rootScope.notifications[$rootScope.notifications.length-1]
+
+    $scope.$on('notify', function(e,notification){
+        console.log("Notifiying :0): "+notification);
+        $rootScope.notifications.push(notification);
+    });
 
     $scope.minibuffer_document = "Document text"                    
 
     $scope.editor = ace.edit("editor");   
+
+    /*
+     * Sets the value of the editor on demand
+     */ 
+    $scope.$on('setEditorValue', function(e,v){ $scope.editor.setValue(v) });
 
     /*
      * A function that asks the minibuffer for input
@@ -83,4 +89,9 @@ function PhilipGarden($scope,$rootScope){
      * Initializates the minibuffer (hides it for future use)
      */ 
     $scope.mkMiniBuffer = function(){ $scope.minibuffer.hide(); }
+
+    /* 
+     * Initializates the editor
+     */ 
+    $scope.mkEditor = function(){ $scope.editor.setValue($rootScope.scratch_buffer.contents); }
 }
